@@ -276,7 +276,7 @@ class Board3D {
      alinhados às calçadas, carros circulando. */
   makeMiolo() {
     const B = this.S.board, sc = this.scene, small = B.H < 600; STATIC = true;
-    const IW = B.W - 100, IH = B.H - 100; const cz0 = 0; this.props.cz0 = cz0;
+    const IW = B.W * 0.72, IH = B.H * 0.72; const cz0 = 0; this.props.cz0 = cz0;
     const RW = small ? 26 : 34;         // largura da rua
     const SW = 9;                       // calçada
     const plazaR = small ? 78 : Math.min(128, IH * .19);
@@ -306,7 +306,7 @@ class Board3D {
     this.props.ripples = []; for (let i = 0; i < 3; i++) { const rp = mesh(g('TorusGeometry', 1, .8, 6, 32), new T.MeshBasicMaterial({ color: 0xDDEEFF, transparent: true, opacity: .6 }), 0, 8.2, cz0, sc, [-Math.PI / 2, 0, 0]); rp.userData.phase = i / 3; this.props.ripples.push(rp); }
     STATIC = true;
     // --- quarteirões nos 4 cantos (lotes de grama com prédios em grade), paleta do distrito mais próximo
-    const lotX0 = RW / 2 + SW + 28, lotZ0 = RW / 2 + SW + 28; // borda interna do lote
+    const lotX0 = RW / 2 + SW + 50, lotZ0 = RW / 2 + SW + 50; // borda interna do lote (mais afastada da rua = mais árvores no meio)
     [[1, 1], [-1, 1], [-1, -1], [1, -1]].forEach(([sx, sz], ci) => {
       const cx = sx * (lotX0 + (IW / 2 - lotX0) / 2), cz = cz0 + sz * (lotZ0 + (IH / 2 - lotZ0) / 2);
       const near = B.distritos.reduce((a, d) => (Math.hypot(d.cx - cx, d.cy - cz) < Math.hypot(a.cx - cx, a.cy - cz) ? d : a)); const pal = DISTRITOS[near.idx].paleta;
@@ -472,7 +472,7 @@ class Board3D {
     const cur = this.ui.current && this.ui.S ? this.ui.current() : null;
     for (const p of this.S ? this.S.players : []) {
       const pw = this.pawns[p.id]; const isCur = cur && cur.id === p.id;
-      pw.root.position.copy(pw.pos); const SC = isCur ? 54 : 34; pw.root.scale.setScalar(SC);
+      pw.root.position.copy(pw.pos); const SC = isCur ? 42 : 34; pw.root.scale.setScalar(SC);
       // vira o boneco para a câmera (mantém o rosto visível)
       pw.root.rotation.y = Math.atan2(this.cam.position.x - pw.pos.x, this.cam.position.z - pw.pos.z);
       pw.lo.visible = !isCur; pw.hi.visible = !!isCur; pw.ring.visible = !!isCur && !p.eliminado;
