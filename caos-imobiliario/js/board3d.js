@@ -235,7 +235,7 @@ class Board3D {
     // cenário por distrito
     B.distritos.forEach((d, di) => this.makeDistrict(d, di));
     // árvores e postes no lado interno do loop
-    B.cells.forEach((c, i) => { const { ix, iz } = this.inward(c); if (i % 4 === 1) { const t = tree(sc, c.x + ix * 62, c.y + iz * 62, rr(.8, 1.15)); this.props.tilt.push(t); } if (i % 7 === 3) this.props.tilt.push(lamp(sc, c.x + ix * 50, c.y + iz * 50)); });
+    B.cells.forEach((c, i) => { const { ix, iz } = this.inward(c); if (i % 4 === 1) { const t = tree(sc, c.x + ix * 130, c.y + iz * 130, rr(.8, 1.15)); this.props.tilt.push(t); } if (i % 7 === 3) this.props.tilt.push(lamp(sc, c.x + ix * 115, c.y + iz * 115)); });
     // rachaduras / lixo / fumaça (invisíveis até o estágio correspondente)
     for (let s = 0; s < 3; s++) for (let i = 0; i < 10; i++) { const c = mesh(g('BoxGeometry', rr(30, 90), .8, 2), m(0x2B1B3D), rr(-B.W / 2, B.W / 2), 1.2, rr(-B.H / 2 - 100, B.H / 2 + 100), sc, [0, rnd() * Math.PI, 0]); c.visible = false; this.props.cracks[s].push(c); }
     B.cells.forEach((c, i) => { if (i % 3 === 0) { const { ix, iz } = this.inward(c); const t = mesh(g('BoxGeometry', rr(4, 9), rr(3, 6), rr(4, 9)), m([0x9AA0A6, 0x8B5A2B, 0x4A4F55][i % 3]), c.x + ix * rr(38, 46) + rr(-10, 10), 2, c.y + iz * rr(38, 46) + rr(-10, 10), sc, [0, rnd() * 3, 0]); t.visible = false; this.props.trash.push(t); } });
@@ -276,7 +276,7 @@ class Board3D {
      alinhados às calçadas, carros circulando. */
   makeMiolo() {
     const B = this.S.board, sc = this.scene, small = B.H < 600; STATIC = true;
-    const IW = B.W * 0.72, IH = B.H * 0.72; const cz0 = 0; this.props.cz0 = cz0;
+    const IW = B.W * 0.62, IH = B.H * 0.62; const cz0 = 0; this.props.cz0 = cz0;
     const RW = small ? 26 : 34;         // largura da rua
     const SW = 9;                       // calçada
     const plazaR = small ? 78 : Math.min(128, IH * .19);
@@ -306,7 +306,7 @@ class Board3D {
     this.props.ripples = []; for (let i = 0; i < 3; i++) { const rp = mesh(g('TorusGeometry', 1, .8, 6, 32), new T.MeshBasicMaterial({ color: 0xDDEEFF, transparent: true, opacity: .6 }), 0, 8.2, cz0, sc, [-Math.PI / 2, 0, 0]); rp.userData.phase = i / 3; this.props.ripples.push(rp); }
     STATIC = true;
     // --- quarteirões nos 4 cantos (lotes de grama com prédios em grade), paleta do distrito mais próximo
-    const lotX0 = RW / 2 + SW + 50, lotZ0 = RW / 2 + SW + 50; // borda interna do lote (mais afastada da rua = mais árvores no meio)
+    const lotX0 = RW / 2 + SW + IW * 0.15, lotZ0 = RW / 2 + SW + IH * 0.15; // borda interna do lote (proporcional, segura em qualquer modo)
     [[1, 1], [-1, 1], [-1, -1], [1, -1]].forEach(([sx, sz], ci) => {
       const cx = sx * (lotX0 + (IW / 2 - lotX0) / 2), cz = cz0 + sz * (lotZ0 + (IH / 2 - lotZ0) / 2);
       const near = B.distritos.reduce((a, d) => (Math.hypot(d.cx - cx, d.cy - cz) < Math.hypot(a.cx - cx, a.cy - cz) ? d : a)); const pal = DISTRITOS[near.idx].paleta;
