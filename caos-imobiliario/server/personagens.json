@@ -1,0 +1,86 @@
+[
+  {
+    "id": "cachorro",
+    "nome": "Cachorro Magnata",
+    "emoji": "🐶",
+    "cor": "#9A6A3A",
+    "desc": "Atarracado, monóculo e gravata borboleta torta."
+  },
+  {
+    "id": "gata",
+    "nome": "Gata Diva",
+    "emoji": "🐱",
+    "cor": "#B48CFF",
+    "desc": "Óculos escuros enormes e rabo empinado."
+  },
+  {
+    "id": "pato",
+    "nome": "Pato Executivo",
+    "emoji": "🦆",
+    "cor": "#F5C542",
+    "desc": "Terno mal ajambrado e gravata puxada."
+  },
+  {
+    "id": "vovo",
+    "nome": "Vovó Milionária",
+    "emoji": "👵",
+    "cor": "#8B7BB8",
+    "desc": "Óculos coloridos e pérolas gigantes."
+  },
+  {
+    "id": "cavaleiro",
+    "nome": "Cavaleiro Falido",
+    "emoji": "⚔️",
+    "cor": "#8E8E9E",
+    "desc": "Armadura enferrujada, capacete torto."
+  },
+  {
+    "id": "coelho",
+    "nome": "Coelho Nervoso",
+    "emoji": "🐰",
+    "cor": "#FFF4E0",
+    "desc": "Treme sem parar, maleta apertada no peito."
+  },
+  {
+    "id": "raposa",
+    "nome": "Raposa Golpista",
+    "emoji": "🦊",
+    "cor": "#FF8C42",
+    "desc": "Sorriso malicioso e cauda enrolada."
+  },
+  {
+    "id": "urso",
+    "nome": "Urso Fisiculturista",
+    "emoji": "🐻",
+    "cor": "#7A4B2A",
+    "desc": "Corpanzil e uma cartola pequena demais."
+  },
+  {
+    "id": "coruja",
+    "nome": "Coruja Contadora",
+    "emoji": "🦉",
+    "cor": "#2BC4B6",
+    "desc": "Óculos redondos e calculadora grudada na asa."
+  },
+  {
+    "id": "porco",
+    "nome": "Porco Chique",
+    "emoji": "🐷",
+    "cor": "#F7A1C4",
+    "desc": "Corrente de ouro grossa e cara de satisfeito."
+  },
+  {
+    "id": "camaleao",
+    "nome": "Camaleão Oportunista",
+    "emoji": "🦎",
+    "cor": "#6CC04A",
+    "desc": "Muda de cor o tempo todo. Olhos que giram."
+  },
+  {
+    "id": "robo",
+    "nome": "Robô Retrô Vintage",
+    "emoji": "🤖",
+    "cor": "#4FC3F7",
+    "desc": "Quadradão, antena torta, luzinhas piscando."
+  }
+]

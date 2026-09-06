@@ -1,0 +1,61 @@
+/* DADOS — PRENDAS FÍSICAS (50). Equivalente ao prendas.json. */
+window.CAOS_DATA = window.CAOS_DATA || {};
+window.CAOS_DATA.prendas = [
+  // Sabor / Paladar
+  { grupo: 'Paladar', texto: 'Chupar uma rodela de limão sem fazer careta' },
+  { grupo: 'Paladar', texto: 'Comer uma colher de pimenta doce (tipo geleia apimentada leve)' },
+  { grupo: 'Paladar', texto: 'Comer uma colher de mostarda' },
+  { grupo: 'Paladar', texto: 'Tomar um golinho de vinagre de maçã' },
+  { grupo: 'Paladar', texto: 'Comer um pedaço de gengibre cru' },
+  { grupo: 'Paladar', texto: 'Chupar bala azeda sem reação' },
+  { grupo: 'Paladar', texto: 'Beber um copo de água com muito limão' },
+  { grupo: 'Paladar', texto: 'Comer uma bala de café/expresso amarga' },
+  // Sensação física leve
+  { grupo: 'Físico', texto: 'Segurar um cubo de gelo na mão por 20 segundos' },
+  { grupo: 'Físico', texto: 'Colocar um cubo de gelo na nuca por 10 segundos' },
+  { grupo: 'Físico', texto: 'Molhar o rosto com água gelada' },
+  { grupo: 'Físico', texto: 'Segurar a respiração por 15 segundos' },
+  { grupo: 'Físico', texto: 'Ficar 30 segundos sem piscar olhando pra outro jogador' },
+  { grupo: 'Físico', texto: 'Fazer 10 polichinelos' },
+  { grupo: 'Físico', texto: 'Ficar na posição de prancha por 15 segundos' },
+  { grupo: 'Físico', texto: 'Fazer 5 agachamentos' },
+  { grupo: 'Físico', texto: 'Ficar num pé só por 20 segundos de olhos fechados' },
+  // Coordenação / equilíbrio
+  { grupo: 'Equilíbrio', texto: 'Equilibrar um livro na cabeça por 15 segundos' },
+  { grupo: 'Equilíbrio', texto: 'Tentar tocar o nariz com o dedo de olhos fechados' },
+  { grupo: 'Equilíbrio', texto: 'Empilhar 3 objetos da mesa sem derrubar' },
+  { grupo: 'Equilíbrio', texto: 'Girar 5 vezes no próprio eixo e tentar andar em linha reta' },
+  { grupo: 'Equilíbrio', texto: 'Bater palma e pisar em ritmos diferentes ao mesmo tempo' },
+  // Social / vergonha boa
+  { grupo: 'Social', texto: 'Cantar os parabéns em voz alta pra si mesmo' },
+  { grupo: 'Social', texto: 'Imitar o animal que os outros escolherem por 10 segundos' },
+  { grupo: 'Social', texto: 'Falar com sotaque diferente até a próxima rodada' },
+  { grupo: 'Social', texto: 'Fazer uma pose de "capa de revista" pra foto' },
+  { grupo: 'Social', texto: 'Dar um discurso de agradecimento de 15 segundos como se tivesse ganhado um prêmio' },
+  { grupo: 'Social', texto: 'Dançar 10 segundos sem música' },
+  { grupo: 'Social', texto: 'Contar uma piada (ruim que seja) pro grupo' },
+  { grupo: 'Social', texto: 'Fazer uma declaração de amor dramática pra uma planta/objeto da sala' },
+  { grupo: 'Social', texto: 'Imitar a voz de um personagem de desenho por uma rodada inteira' },
+  { grupo: 'Social', texto: 'Deixar o grupo tirar uma foto engraçada sua pra usar de "perfil" até o fim do jogo' },
+  // Mental / memória
+  { grupo: 'Mental', texto: 'Recitar o alfabeto de trás pra frente' },
+  { grupo: 'Mental', texto: 'Falar 5 palavras que rimam com "gato" em 10 segundos' },
+  { grupo: 'Mental', texto: 'Contar de 3 em 3 até 30 sem errar' },
+  { grupo: 'Mental', texto: 'Repetir uma frase difícil (trava-língua) 3 vezes rápido' },
+  { grupo: 'Mental', texto: 'Lembrar e repetir a última coisa engraçada que alguém falou na mesa' },
+  // Temáticas de negócio
+  { grupo: 'Temática', texto: 'Fingir que está comendo uma pizza invisível com cara de satisfação exagerada' },
+  { grupo: 'Temática', texto: 'Fazer pose de "personal trainer bravo" gritando um comando de exercício' },
+  { grupo: 'Temática', texto: 'Fazer uma massagem de 10 segundos no ombro de quem está do lado' },
+  { grupo: 'Temática', texto: 'Fingir que está cortando o cabelo de alguém no ar' },
+  { grupo: 'Temática', texto: 'Imitar um carro dando ré fazendo o som "bip bip"' },
+  { grupo: 'Temática', texto: 'Fazer pose de "modelo de passarela" andando até a cozinha e voltando' },
+  { grupo: 'Temática', texto: 'Fingir estar "vendendo" um produto aleatório da mesa com discurso de vendedor' },
+  { grupo: 'Temática', texto: 'Imitar um cachorro/gato por 10 segundos' },
+  { grupo: 'Temática', texto: 'Fazer cara de "surpreso com a conta" exagerada' },
+  { grupo: 'Temática', texto: 'Fingir tirar uma soneca instantânea de 5 segundos e "acordar assustado"' },
+  // Curinga
+  { grupo: 'Curinga', texto: 'Falar só sussurrando até sua próxima jogada' },
+  { grupo: 'Curinga', texto: 'Ficar de olhos fechados até sua próxima jogada (exceto pra jogar o dado)' },
+  { grupo: 'Curinga', texto: 'Deixar outro jogador escolher sua próxima "prenda bônus" livremente' },
+];

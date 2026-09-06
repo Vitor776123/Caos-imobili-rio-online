@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#2B1B3D">
+<title>Caos Imobiliário</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ===== TELA 1: INÍCIO / SETUP ===== -->
+<section id="screen-home" class="screen active">
+  <div class="home-inner">
+    <header class="hero">
+      <div class="hero-pyramid" aria-hidden="true">
+        <span class="blk b1"></span><span class="blk b2"></span><span class="blk b3"></span><span class="blk b4"></span>
+      </div>
+      <h1>Caos<br>Imobiliário</h1>
+      <p class="tagline">Todo mundo começa rico. O jogo é não terminar como o mais lascado.</p>
+    </header>
+
+    <div class="mode-switch" role="tablist">
+      <button class="tab sel" id="tab-local" role="tab">📱 Mesmo aparelho</button>
+      <button class="tab" id="tab-online" role="tab">🌐 Online</button>
+    </div>
+
+    <div id="panel-local">
+    <div class="setup-block">
+      <h2>Duração da partida</h2>
+      <div class="mode-row" id="mode-row"></div>
+    </div>
+
+    <div class="setup-block">
+      <h2>Quem vai jogar <small id="player-count"></small></h2>
+      <div id="player-list" class="player-list"></div>
+      <div class="add-row">
+        <button class="btn ghost" id="add-human">+ Pessoa</button>
+        <button class="btn ghost" id="add-bot">+ Bot</button>
+      </div>
+      <p class="hint">De 2 a 12 jogadores, pelo menos uma pessoa. Passem o aparelho a cada vez.</p>
+    </div>
+
+    <button class="btn primary big" id="btn-start">Começar o caos</button>
+    <p class="hint center">Até 8 jogadores: 3 negócios cada. De 9 a 12: 2 negócios cada.</p>
+    </div>
+
+    <div id="panel-online" hidden>
+      <div id="online-entry">
+        <div class="setup-block">
+          <h2>Você</h2>
+          <div class="player-row" id="online-me">
+            <button class="avatar-btn" id="online-avatar"></button>
+            <input type="text" maxlength="14" id="online-name" placeholder="Seu nome" aria-label="Seu nome">
+            <span class="ctrl"><span class="bot-name" id="online-char-name"></span></span>
+          </div>
+        </div>
+        <div class="setup-block">
+          <h2>Criar uma sala</h2>
+          <div class="mode-row" id="online-mode-row"></div>
+          <button class="btn primary big" id="btn-create" style="margin-top:10px">Criar sala</button>
+        </div>
+        <div class="setup-block">
+          <h2>Entrar numa sala</h2>
+          <div class="join-row"><input type="text" id="join-code" maxlength="6" placeholder="Código (ex: CX7Q2)" autocapitalize="characters"><button class="btn teal" id="btn-join">Entrar</button></div>
+        </div>
+        <details class="server-box"><summary>Servidor</summary>
+          <div class="join-row"><input type="text" id="online-url" placeholder="wss://…"><button class="btn small" id="btn-server-test">Testar</button></div>
+          <p class="hint" id="online-status">Endereço do servidor do jogo (quem hospedou passa esse endereço).</p>
+        </details>
+      </div>
+
+      <div id="lobby" hidden>
+        <div class="lobby-code"><span>Código da sala</span><b id="lobby-code">—</b><button class="btn small" id="btn-copy-code">Copiar</button></div>
+        <p class="hint center">Quem for entrar digita esse código na aba Online.</p>
+        <div id="lobby-players" class="player-list"></div>
+        <div id="lobby-host" hidden>
+          <div class="setup-block"><h2>Duração</h2><div class="mode-row" id="lobby-mode-row"></div></div>
+          <div class="add-row"><button class="btn ghost" id="btn-lobby-bot">+ Bot</button></div>
+          <button class="btn primary big" id="btn-lobby-start" style="margin-top:12px">Começar partida</button>
+        </div>
+        <p class="hint center" id="lobby-wait" hidden>Aguardando o anfitrião começar…</p>
+        <button class="btn ghost big" id="btn-lobby-leave" style="margin-top:10px">Sair da sala</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== TELA 2: JOGO ===== -->
+<section id="screen-game" class="screen">
+  <main class="board-wrap" id="board-wrap">
+    <div id="anchor-layer" class="anchor-layer"></div>
+  </main>
+
+  <header class="hud-top">
+    <div class="hud-left">
+      <span class="round-pill" id="round-pill">Rodada 1/10</span>
+      <span class="mode-pill" id="mode-pill">Rápido</span>
+    </div>
+    <div class="hud-right">
+      <button class="icon-btn" id="btn-log" title="Histórico">📜</button>
+      <button class="icon-btn" id="btn-camera" title="Alternar câmera">🎯</button>
+      <button class="icon-btn" id="btn-quit" title="Sair da partida">✕</button>
+    </div>
+  </header>
+
+  <footer class="hud-bottom">
+    <div class="players-strip" id="players-strip"></div>
+  </footer>
+
+  <aside class="drawer" id="drawer">
+    <div class="drawer-head"><b>Histórico</b><button class="icon-btn" id="btn-drawer-close">✕</button></div>
+    <div class="log" id="log"></div>
+  </aside>
+</section>
+
+<!-- ===== TELA 3: FIM ===== -->
+<section id="screen-end" class="screen">
+  <div class="end-inner">
+    <h1 id="end-title">Acabou.</h1>
+    <p class="tagline" id="end-sub"></p>
+    <ol class="ranking" id="ranking"></ol>
+    <div class="add-row">
+      <button class="btn primary big" id="btn-again">Jogar de novo</button>
+      <button class="btn ghost big" id="btn-home">Voltar ao início</button>
+    </div>
+  </div>
+</section>
+
+<!-- Seleção de personagem 3D -->
+<div id="char-picker" class="picker" aria-hidden="true">
+  <div class="picker-inner">
+    <div class="picker-head"><span id="picker-for">Escolha o personagem</span><button class="icon-btn" id="picker-close">✕</button></div>
+    <div class="picker-stage">
+      <canvas id="picker-canvas"></canvas>
+      <button class="picker-arrow left" id="picker-prev" aria-label="Anterior">‹</button>
+      <button class="picker-arrow right" id="picker-next" aria-label="Próximo">›</button>
+      <span class="picker-hint">arraste para girar</span>
+    </div>
+    <div class="picker-info"><b id="picker-name"></b><p id="picker-desc"></p></div>
+    <div class="picker-grid" id="picker-grid"></div>
+    <button class="btn primary big" id="picker-choose">Escolher</button>
+  </div>
+</div>
+
+<!-- Modais e toasts -->
+<div id="modal-root" class="modal-root" aria-hidden="true">
+  <div class="modal-backdrop"></div>
+  <div class="modal" role="dialog"></div>
+</div>
+<div id="toasts" class="toasts" aria-live="polite"></div>
+
+<script src="js/vendor/three.min.js"></script>
+<script src="js/characters.js"></script>
+<script src="data/negocios.js"></script>
+<script src="data/prendas.js"></script>
+<script src="data/eventos.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/board3d.js"></script>
+<script src="js/bots.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/config.js"></script>
+<script src="js/net.js"></script>
+<script src="js/main.js"></script>
+<script src="js/online.js"></script>
+</body>
+</html>

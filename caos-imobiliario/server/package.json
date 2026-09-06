@@ -1,0 +1,17 @@
+{
+  "name": "caos-imobiliario-server",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Servidor multiplayer (WebSocket) do Caos Imobiliário",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "personagens": "node gerar-personagens.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}
