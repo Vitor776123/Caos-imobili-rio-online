@@ -19,6 +19,7 @@ const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const T = (ms) => (reduced ? Math.min(ms, 40) : ms);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const has3D = !!(window.CaosChars && CaosChars.webglOk());
+const sfx = (n) => window.CaosAudio && CaosAudio.sfx(n);
 const TIMING = { botLeitura: 4500, botFala: 2200, humanoMaxAuto: 0 }; // humano: 0 = só avança com toque
 const thumbOf = (p) => (has3D && p.personagem ? CaosChars.thumbnail(p.personagem, 96) : null);
 const av = (p) => { const u = thumbOf(p); return u ? `<img class="thumb" src="${u}" alt="">` : p.avatar; };
@@ -88,15 +89,16 @@ const UI = {
     this.applyState(ctx.state);
     this.shownRep = {}; this.S.players.forEach((p) => (this.shownRep[p.id] = p.reputacao));
     $('#log').innerHTML = ''; $('#players-strip').innerHTML = ''; $('#anchor-layer').innerHTML = ''; this.anchors.clear();
-    this.S.log.forEach((e) => this.appendLog(e));
     $('#mode-pill').textContent = CaosEngine.CONFIG.modos[this.S.modo].nome;
     this.renderPlayers(); this.updateRound(); this.bindGameButtons();
     await showScreen('screen-game');
     this.renderBoard(); this.board.resize(); this.updateRound(); this.updateCells(); this.focusPlayer(this.current(), true);
+    if (window.CaosAudio) CaosAudio.music.start();
   },
   applyState(state) {
     if (this.online) state.players.forEach((p, i) => { p.personagem = this.online.personagens[i] || 'cachorro'; });
     this.S = state; if (this.engine) this.engine.state = state; if (this.board) this.board.S = state;
+    if (this.online) { const seen = this.online.logSeen || 0; (state.log || []).forEach((e) => { if (e.t >= seen) this.appendLog(e); }); this.online.logSeen = state.log && state.log.length ? state.log[state.log.length - 1].t + 1 : seen; }
     if (this.online) { this.charOf = {}; state.players.forEach((p) => (this.charOf[p.id] = p.personagem)); }
   },
   isMe(p) { return this.online ? p.id === this.online.myId : this.isHuman(p); },
@@ -113,18 +115,27 @@ const UI = {
     this.renderPlayers(); this.updateRound(); this.bindGameButtons();
     await showScreen('screen-game');
     this.renderBoard(); this.board.resize(); this.updateRound(); this.updateCells();
+    if (window.CaosAudio) CaosAudio.music.start();
     this.engine.rodar().catch((e) => { console.error(e); toast('Algo quebrou de verdade: ' + esc(e.message), 'bad', 6000); });
   },
 
   bindGameButtons() {
+    this.bindAudioButtons();
     $('#btn-camera').onclick = () => { this.followMode = !this.followMode; $('#btn-camera').textContent = this.followMode ? '🎯' : '🗺️'; this.focusPlayer(this.current()); };
     $('#btn-log').onclick = () => $('#drawer').classList.toggle('open');
     $('#btn-drawer-close').onclick = () => $('#drawer').classList.remove('open');
     $('#board-wrap').addEventListener('pointerdown', () => $('#drawer').classList.remove('open'));
-    $('#btn-quit').onclick = async () => { const r = await showModal({ kind: 'dark', html: '<div class="m-title">Sair da partida?</div><p class="m-text">O jogo atual será perdido.</p>', buttons: [{ label: 'Continuar jogando', value: 'nao', cls: 'primary', row: true }, { label: 'Sair', value: 'sim', cls: 'coral', row: true }] }); if (r === 'sim') location.reload(); };
+    $('#btn-quit').onclick = async () => { const r = await showModal({ kind: 'dark', html: `<div class="m-title">Sair da partida?</div><p class="m-text">${this.online ? 'Tem certeza? Um bot assume o seu lugar e você não volta mais para esta sala.' : 'O jogo atual será perdido.'}</p>`, buttons: [{ label: 'Continuar jogando', value: 'nao', cls: 'primary', row: true }, { label: 'Sair', value: 'sim', cls: 'coral', row: true }] }); if (r === 'sim') { if (this.online && window.CaosOnline) CaosOnline.abandonarPartida(); else location.reload(); } };
     window.addEventListener('resize', () => { if (this.board) { this.board.resize(); this.focusPlayer(this.current(), true); } }, { passive: true });
   },
 
+  bindAudioButtons() {
+    if (!window.CaosAudio) return;
+    const paint = (p) => { $('#btn-sfx').textContent = p.sfx ? '🔊' : '🔇'; $('#btn-sfx').title = p.sfx ? 'Efeitos: ligados' : 'Efeitos: desligados'; $('#btn-music').textContent = p.music ? '🎵' : '🎵̸'; $('#btn-music').classList.toggle('off', !p.music); $('#btn-sfx').classList.toggle('off', !p.sfx); $('#btn-music').title = p.music ? 'Música: ligada' : 'Música: desligada'; };
+    paint(CaosAudio.pref); CaosAudio.onChange(paint);
+    $('#btn-sfx').onclick = () => { CaosAudio.toggle('sfx'); sfx('click'); };
+    $('#btn-music').onclick = () => CaosAudio.toggle('music');
+  },
   current() { return this.S.players[this.S.turnoIdx]; },
 
   av(p) { const t = thumbOf(p); return t ? `<img class="thumb" src="${t}" alt="">` : p.avatar; },
@@ -250,6 +261,7 @@ const UI = {
     const maxV = Math.max(0, ...S.players.filter((p) => !p.eliminado).map((p) => p.voltas));
     const stage = Math.min(3, Math.floor((maxV / S.rodadasTotais) * 4));
     if (this.board && this.board.stage !== stage) this.board.setStage(stage);
+    if (window.CaosAudio) CaosAudio.music.setStage(stage);
   },
   appendLog(entry) {
     const log = $('#log'); const p = document.createElement('p'); p.className = entry.tipo; p.textContent = entry.texto; log.appendChild(p);
@@ -288,30 +300,34 @@ const UI = {
             else if (ui.isHuman(p) && ui.humanCount >= 2) toast(`📱 Passe o aparelho para ${p.avatar} <b>${esc(p.nome)}</b>`, 'sys', 2200);
             await sleep(T(ui.isHuman(p) ? 450 : 600)); return;
           case 'bot_fala': { if (evt.negocioId) { const n = ui.S.negocios[evt.negocioId]; ui.pulseCell(p.posicao); await ui.bubble({ playerId: p.id, kind: 'bot', html: `${n.emoji} ${esc(n.nome)} à venda — 🤖 "${esc(evt.texto)}"`, duration: TIMING.botFala }); } else await ui.botSays(p, evt.texto); return; }
-          case 'dado': await ui.board.dice(p.id, evt.valor); ui.floatText(p, '🎲 ' + evt.valor, 'pos'); await sleep(T(250)); return;
+          case 'dado': sfx('dice'); await ui.board.dice(p.id, evt.valor); ui.floatText(p, '🎲 ' + evt.valor, 'pos'); await sleep(T(250)); return;
           case 'passo':
+            sfx(evt.ultimo ? 'land' : 'step');
             await ui.hopTo(p, evt.cellId, evt.ultimo ? 420 : 300);
             ui.focusPlayer(p);
             if (evt.ultimo) { ui.pulseCell(evt.cellId); ui.placeTokens(); await sleep(T(240)); } else await sleep(T(40));
             return;
-          case 'passou_topo': ui.floatText(0, '+' + fmt(evt.valor), 'pos'); ui.updateRound(); toast(`🔁 ${esc(p.nome)}: volta ${evt.voltas}/${evt.total} · +${fmt(evt.valor)}`, 'sys', 2200); await sleep(T(350)); return;
+          case 'passou_topo': sfx('coins'); ui.floatText(0, '+' + fmt(evt.valor), 'pos'); ui.updateRound(); toast(`🔁 ${esc(p.nome)}: volta ${evt.voltas}/${evt.total} · +${fmt(evt.valor)}`, 'sys', 2200); await sleep(T(350)); return;
           case 'concluiu': await ui.info(p, { kind: 'token', html: `<div class="b-head"><span class="e">🏁</span>${esc(p.nome)} completou as voltas!</div><p class="b-text">Agora só assiste e torce (ou não) pelos outros.</p>` }); return;
           case 'respiro': await ui.info(p, { kind: 'info', html: `<div class="b-head"><span class="e">☁️</span>Respiro</div><p class="b-text">Nada aconteceu. Suspeito.</p>`, max: 1600 }); return;
           case 'no_topo': await ui.info(p, { kind: 'info', html: `<div class="b-head"><span class="e">👑</span>No topo</div><p class="b-text">Por enquanto.</p>`, max: 1500 }); return;
           case 'na_encruzilhada': await ui.info(p, { kind: 'info', html: `<div class="b-head"><span class="e">🔀</span>Encruzilhada</div><p class="b-text">Escolhe o caminho na próxima jogada.</p>`, max: 1800 }); return;
           case 'proprio': await ui.info(p, { kind: 'info', html: ui.negHead(evt.negocio, 'seu próprio negócio') + `<p class="b-text">Café grátis. Nada a pagar.</p>`, max: 1800 }); return;
           case 'fechado': await ui.info(p, { kind: 'info', html: ui.negHead(evt.negocio, '🔒 fechado por fofoca') + `<p class="b-text">Ninguém paga nada aqui hoje.</p>`, max: 2000 }); return;
-          case 'compra': ui.floatText(p, '-' + fmt(evt.negocio.custo), 'neg'); ui.updateCells(); ui.pulseCell(p.posicao); await ui.info(p, { kind: 'token', html: ui.negHead(evt.negocio, 'comprado!') + `<div class="b-money neg">-${fmt(evt.negocio.custo)}</div>`, max: 1800 }); return;
+          case 'compra': sfx('chaching'); ui.floatText(p, '-' + fmt(evt.negocio.custo), 'neg'); ui.updateCells(); ui.pulseCell(p.posicao); await ui.info(p, { kind: 'token', html: ui.negHead(evt.negocio, 'comprado!') + `<div class="b-money neg">-${fmt(evt.negocio.custo)}</div>`, max: 1800 }); return;
           case 'nao_comprou': await ui.info(p, { kind: 'info', html: ui.negHead(evt.negocio) + `<p class="b-text">Só olhou a vitrine.</p>`, max: 1300 }); return;
           case 'taxa':
+            sfx('pay');
             ui.floatText(p, '-' + fmt(evt.valor), 'neg'); ui.floatText(evt.dono, '+' + fmt(evt.valor), 'pos');
             await ui.info(p, { kind: 'taxa', html: ui.negHead(evt.negocio, `taxa · dono ${evt.dono.avatar} ${esc(evt.dono.nome)}`) + `<p class="b-text">${esc(evt.texto)}</p><div class="b-money neg">-${fmt(evt.valor)} <small style="font-weight:500;font-size:.72rem">→ ${esc(evt.dono.nome)}</small></div>` });
             return;
           case 'karma':
+            sfx(evt.bom ? 'karmaBom' : 'karmaRuim');
             ui.floatText(evt.alvo, '-' + fmt(evt.valor), 'neg'); ui.pulseCell(evt.alvo.posicao);
             await ui.info(evt.alvo, { kind: evt.bom ? 'karma_bom' : 'karma_ruim', html: `<div class="b-head"><span class="e">${evt.bom ? '🍀' : '💀'}</span>${evt.bom ? 'Karma bom' : 'Karma ruim'}</div><div class="b-eyebrow">${evt.negocio.emoji} ${esc(evt.negocio.nome)} · ${esc(evt.alvo.nome)} se ferrou</div><p class="b-text">${esc(evt.texto)}</p><div class="b-money neg">-${fmt(evt.valor)}</div>` });
             return;
           case 'evento': {
+            sfx(evt.forte ? 'eventoForte' : 'evento');
             const ganha = evt.carta.efeito.tipo.startsWith('ganha');
             ui.pulseCell(p.posicao); if (evt.alvo.id !== p.id) ui.focusPlayer(evt.alvo);
             ui.floatText(evt.alvo, ganha ? '+' : '−', ganha ? 'pos' : 'neg');
@@ -319,10 +335,11 @@ const UI = {
             if (evt.alvo.id !== p.id) ui.focusPlayer(p);
             return;
           }
-          case 'token_ganho': ui.floatText(p, '🍀 +1', 'pos'); await ui.info(p, { kind: 'token', html: `<div class="b-head"><span class="e">🍀</span>Virada de Sorte!</div><p class="b-text">3 karmas ruins = 1 token. ${evt.retido ? 'Já tem 2 — esse fica retido.' : 'Use no início de um turno contra o líder.'}</p>`, max: 3200 }); return;
+          case 'token_ganho': sfx('powerup'); ui.floatText(p, '🍀 +1', 'pos'); await ui.info(p, { kind: 'token', html: `<div class="b-head"><span class="e">🍀</span>Virada de Sorte!</div><p class="b-text">3 karmas ruins = 1 token. ${evt.retido ? 'Já tem 2 — esse fica retido.' : 'Use no início de um turno contra o líder.'}</p>`, max: 3200 }); return;
           case 'prenda_cumprida': if (!ui.isHuman(p)) await ui.botSays(p, 'Cumpri a prenda. Ninguém viu, mas cumpri.'); else ui.floatText(p, '🎭', 'pos'); return;
           case 'prenda_recusada': ui.floatText(p, '-' + fmt(evt.valor), 'neg'); await sleep(T(400)); return;
           case 'virada': {
+            sfx('whoosh');
             const v = VIRADAS[evt.efeito]; ui.updateCells(); ui.focusPlayer(evt.alvo);
             if (evt.valor) { ui.floatText(evt.alvo, '-' + fmt(evt.valor), 'neg'); if (evt.efeito !== 'fofoca') ui.floatText(p, '+' + fmt(evt.valor), 'pos'); }
             await ui.info(p, { playerId: evt.alvo.id, kind: 'token', html: `<div class="b-head"><span class="e">${v.emoji}</span>${v.nome}</div><div class="b-eyebrow">🍀 Virada de ${esc(p.nome)} contra ${evt.alvo.avatar} ${esc(evt.alvo.nome)}</div><p class="b-text">${esc(evt.detalhe)}</p>` });
@@ -332,14 +349,15 @@ const UI = {
             ui.focusPlayer(p);
             await showModal({ kind: 'ultima', html: `<div class="ultima-draw"><div class="m-eyebrow">${p.avatar} ${esc(p.nome)} quebrou (${fmt(evt.repAntes)})</div><div class="m-title">Última Cartada</div><div class="ultima-card" id="ultima-card">🃏</div><p class="m-text" id="ultima-text">35% de chance de voltar…</p></div>`,
               onOpen: async (m, finish) => {
-                const card = $('#ultima-card', m), txt = $('#ultima-text', m); await sleep(T(300)); card.classList.add('spin'); await sleep(T(1650));
-                card.classList.add(evt.sucesso ? 'ok' : 'fail'); card.textContent = evt.sucesso ? '🎉' : '💀';
+                const card = $('#ultima-card', m), txt = $('#ultima-text', m); await sleep(T(300)); sfx('suspense'); card.classList.add('spin'); await sleep(T(1650));
+                sfx(evt.sucesso ? 'fanfare' : 'gameover'); card.classList.add(evt.sucesso ? 'ok' : 'fail'); card.textContent = evt.sucesso ? '🎉' : '💀';
                 txt.innerHTML = evt.sucesso ? `<b>Deu certo!</b> ${esc(p.nome)} volta com ${fmt(CaosEngine.CONFIG.reputacaoRetorno)}${evt.negocioPerdido ? ` e perde ${evt.negocioPerdido.emoji} ${esc(evt.negocioPerdido.nome)}` : ''}.` : `<b>Falhou.</b> ${esc(p.nome)} está fora do jogo.`;
                 const b = document.createElement('div'); b.className = 'm-actions'; b.innerHTML = `<button class="btn ${evt.sucesso ? 'teal' : 'coral'}">${evt.sucesso ? 'De volta ao caos' : 'Descanse em paz'}</button>`; m.appendChild(b); b.querySelector('button').onclick = () => finish('ok');
               } });
             ui.renderPlayers(); ui.placeTokens(); return;
           }
           case 'heranca_falencia': {
+            sfx('dundundun');
             const nomes = evt.negocios.map((id) => ui.engine.state.negocios[id]).map((n) => `${n.emoji} ${esc(n.nome)}`).join(', ');
             toast(`💀 Falência Definitiva: os negócios de ${esc(evt.de.nome)} (${nomes}) foram herdados por ${esc(evt.para.nome)}, o mais lascado da mesa.`, 'bad', 3600);
             ui.renderPlayers(); ui.placeTokens(); await sleep(T(400)); return;
@@ -403,6 +421,7 @@ const UI = {
     $('#end-title').textContent = r.length ? `${r[0].avatar} ${r[0].nome} se deu menos mal` : 'Acabou.';
     $('#end-sub').textContent = `${motivo} ${r.length > 1 ? `E ${r[r.length - 1].nome} foi quem mais se lascou.` : ''}`;
     $('#ranking').innerHTML = r.map((x, i) => `<li class="${i === 0 ? 'first' : ''} ${i === r.length - 1 && r.length > 1 ? 'last' : ''} ${x.eliminado ? 'dead' : ''}" style="animation-delay:${i * 90}ms"><span class="pos">${x.posicao}º</span><span class="av" style="background:${x.cor}">${this.av(x)}</span><span class="nm"><b>${esc(x.nome)}</b><span>${x.eliminado ? 'eliminado(a)' : `${x.negocios} negócio(s)`}${x.titulo ? ' · ' + x.titulo : ''}</span></span><span class="rp">${fmt(x.reputacao)}</span></li>`).join('');
+    if (window.CaosAudio) { CaosAudio.music.stop(); sfx('finale'); }
     $('#btn-again').style.display = this.online ? 'none' : '';
     await sleep(T(600)); await showScreen('screen-end');
     if (this.board) { this.board.destroy(); this.board = null; }

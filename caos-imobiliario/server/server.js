@@ -51,7 +51,7 @@ class Room {
   }
   touch() { this.lastActivity = Date.now(); }
   member(tok) { return this.members.find((m) => m.token === tok); }
-  humans() { return this.members.filter((m) => m.tipo === 'humano'); }
+  humans() { return this.members.filter((m) => m.tipo === 'humano' && !m.saiu); }
   connectedHumans() { return this.humans().filter((m) => m.ws && m.ws.readyState === 1); }
   lobbyInfo() {
     return { code: this.code, modo: this.modo, fase: this.fase, minJogadores: CONFIG.minJogadores, maxJogadores: CONFIG.maxJogadores,
@@ -82,6 +82,7 @@ class Room {
     return {
       onLog: (e) => log(`[${room.code}] ${e.texto}`),
       async ask(pending) {
+        if (room.abandonada) throw new Error('sala abandonada');
         room.touch();
         if (pending.type === 'decisao_grupo') { // decisão do grupo: o anfitrião responde
           const host = room.member(room.hostToken); const alvo = host && host.ws ? host : room.connectedHumans()[0];
@@ -102,6 +103,7 @@ class Room {
         return room.askPlayer(m, pending);
       },
       async animate(evt) {
+        if (room.abandonada) throw new Error('sala abandonada');
         room.touch();
         const id = ++room.evtSeq; const msg = { t: 'evt', id, evt, state: room.snapshot() };
         const esperados = room.connectedHumans();
@@ -141,7 +143,26 @@ class Room {
     const personagens = this.members.map((m) => m.personagem);
     this.members.forEach((m) => this.send(m, { t: 'start', setup, state: this.snapshot(), you: m.playerId, personagens }));
     log(`[${this.code}] partida iniciada: ${this.members.map((m) => m.nome).join(', ')}`);
-    this.engine.rodar().catch((e) => { log(`[${this.code}] ERRO`, e); this.broadcast({ t: 'error', msg: 'Erro no servidor: ' + e.message }); });
+    this.engine.rodar().catch((e) => { if (e.message === 'sala abandonada') return; log(`[${this.code}] ERRO`, e); this.broadcast({ t: 'error', msg: 'Erro no servidor: ' + e.message }); });
+  }
+  /* jogador humano sai de propósito no meio da partida: um bot assume o lugar dele
+     (a engine continua intacta: só o campo `tipo` do jogador muda, e o ask passa a ser decidido aqui).
+     Se não sobrar nenhuma pessoa, a sala é encerrada. */
+  abandonar(m) {
+    if (m.saiu) return; m.saiu = true; m.ws = null;
+    log(`[${this.code}] ${m.nome} saiu da partida de propósito`);
+    const p = this.engine && this.engine.player(m.playerId);
+    if (p && !p.eliminado) {
+      m.tipo = 'bot'; m.personalidade = PERS[crypto.randomInt(PERS.length)]; p.tipo = 'bot'; p.personalidade = m.personalidade;
+      this.engine.log(`🚪 ${p.nome} saiu da partida. Um bot (${CaosBots.PERSONALIDADES[m.personalidade].nome}) assumiu o lugar.`, 'sistema');
+    }
+    // pergunta pendente dele? o bot responde agora, para o jogo não travar
+    const pd = this.pendings.get(m.token);
+    if (pd) { this.pendings.delete(m.token); const v = pd.pending.type === 'decisao_grupo' ? 'continuar' : CaosBots.decidir(pd.pending, this.engine.state, p, this.engine.rng); pd.resolve(v); }
+    if (this.acks && this.acks.faltam.delete(m.token) && !this.acks.faltam.size && this.acks.resolve) this.acks.resolve();
+    this.broadcast({ t: 'saiu', nome: m.nome, playerId: m.playerId, state: this.engine ? this.snapshot() : null });
+    if (!this.humans().some((h) => !h.saiu)) { this.abandonada = true; rooms.delete(this.code); log(`[${this.code}] sala encerrada: ninguém mais na partida`); }
+    else this.broadcastLobby();
   }
   resumeFor(m) { // reconexão: estado atual + pergunta pendente, se houver
     this.send(m, { t: 'start', setup: null, state: this.snapshot(), you: m.playerId, resume: true, personagens: this.members.map((x) => x.personagem) });
@@ -188,6 +209,7 @@ wss.on('connection', (ws) => {
         }
         case 'reconnect': {
           const r = rooms.get(String(msg.code || '').toUpperCase()); const m = r && r.member(msg.token); if (!m) throw new Error('Não deu para reconectar: sala expirou.');
+          if (m.saiu) throw new Error('Você saiu dessa partida.');
           if (m.ws && m.ws !== ws && m.ws.readyState === 1) m.ws.close();
           m.ws = ws; me = m; room = r; log(`[${room.code}] ${me.nome} reconectou`);
           reply({ t: 'joined', code: room.code, token: m.token, host: m.token === room.hostToken, lobby: room.lobbyInfo(), reconnected: true });
@@ -205,11 +227,14 @@ wss.on('connection', (ws) => {
         case 'start': if (!isHost) throw new Error('Só o anfitrião começa.'); return room.start();
         case 'answer': return room.onAnswer(me, msg.reqId, msg.value);
         case 'ack': return room.onAck(me, msg.id);
-        case 'leave': room.removeMember(me.token); me = null; room = null; return;
+        case 'leave': { // saída INTENCIONAL (não é queda de conexão)
+          if (room.fase === 'lobby') { room.removeMember(me.token); me = null; room = null; return; }
+          room.abandonar(me); me = null; room = null; return;
+        }
       }
     } catch (e) { fail(e); }
   });
-  ws.on('close', () => { if (room && me) { if (me.ws === ws) me.ws = null; if (room.fase === 'lobby' && me.token !== room.hostToken) room.removeMember(me.token); else room.onDisconnect(me); } });
+  ws.on('close', () => { if (room && me && !me.saiu) { if (me.ws === ws) me.ws = null; if (room.fase === 'lobby' && me.token !== room.hostToken) room.removeMember(me.token); else room.onDisconnect(me); } });
 });
 
 // limpeza de salas inativas

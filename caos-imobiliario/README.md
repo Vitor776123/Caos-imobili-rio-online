@@ -48,10 +48,46 @@ Se você preferir manter o jogo no Netlify e só o servidor no Render, abra `js/
 
 Para testar antes de publicar: `cd server && npm install && npm start`, abra `http://localhost:8080` em duas abas.
 
+### Sair da partida (online)
+O ✕ do HUD, no modo online, abre a confirmação "Tem certeza? Um bot assume o seu lugar…". Ao confirmar: o cliente manda `leave`, fecha o WebSocket, apaga a sessão salva (`caos_online_session`) e volta à tela inicial — ao reabrir o jogo **não** há reconexão. No servidor, `Room.abandonar()` marca o jogador como saído, transforma o jogador dele em bot (só o campo `tipo` muda; a engine segue intacta), responde na hora qualquer pergunta pendente dele, avisa a sala (`saiu` → toast e histórico) e recusa reconexão com aquele token. Se não sobrar nenhuma pessoa, a sala é encerrada. Quedas acidentais (sem clicar em sair) continuam com reconexão automática. Teste: `node server/test-sair.js`.
+
 ### Validação feita
+- `server/test-sair.js`: Bruno sai de propósito aos 3 s, Carla cai e reconecta aos 5 s — partida chega ao fim sem Bruno, os outros recebem o aviso, Bruno não recebe mais nada e sua reconexão é recusada ("Você saiu dessa partida."), Carla reconecta.
 - `server/test-3clientes.js`: partida completa (modo Rápido) com 3 clientes + 1 bot — 632 eventos vistos pelos 3 com estado idêntico, 0 `ask` entregue ao jogador errado, reconexão de um cliente no meio da partida, fim de jogo alcançado em 27 s.
 - 3 navegadores reais (Playwright) + 1 bot no servidor local: 140/140 amostras com posições e reputações idênticas nas 3 telas; balão "sua vez" apareceu apenas na tela do dono do turno (30/30).
 - Modo local (mesmo aparelho) sem regressão.
+
+## Visual v5.2 — composição Monopoly Plus
+- **Texto das casas (billboard)**: o nome e o preço de cada casa são um `THREE.Sprite` (`labelTex`) — encara a câmera automaticamente, em qualquer ponto do loop e ângulo, sem nenhum cálculo de rotação por casa. Fica na borda externa da casa como uma placa; a da casa do peão ativo sobe acima dele; as distantes desvanecem para não poluir. No topo da casa fica só a faixa colorida do distrito e o ícone. Validado em 12 posições do loop (`validacao-1`).
+- **Miolo (composição fixa)**: grama de base; ruas em cruz asfaltadas com calçadas claras e faixa tracejada; praça circular de pedra com meio-fio ao redor da fonte (anéis concêntricos + ondulações animadas na água) e um monumento (pedestal + estátua cinza do "magnata" de cartola e bengala); quarteirões em grade nos 4 cantos com a paleta do distrito mais próximo; árvores e postes alternados ao longo das calçadas e ao redor da praça; carros circulando nas ruas (desviam da praça). No declínio: água escurece e para de ondular, grama amarela, carros param, postes tremem (`validacao-3`, dia e noite).
+- **Cache**: os scripts e o CSS no `index.html` levam `?v=5.2` — ao publicar uma versão nova, mude esse número para o navegador dos jogadores não usar arquivos antigos (foi o que fez a captura do bug mostrar o tabuleiro anterior).
+- **Câmera baixa**: por dentro do loop, ~130 unidades de altura, atrás e ao lado do peão, olhando ao longo do trajeto e um pouco para cima — peão em primeiro plano, casa em jogo à frente, prédios se erguendo ao fundo (`focusPlayer`). Vista geral (🗺️) e suavização mantidas.
+- **Peão ativo maior**: escala 54 (era 34) com o LOD alto; os demais 34. Balões ancoram acima da cabeça nova.
+- **Prédios**: 5 estilos (`box`, `roof` telhado 4 águas + chaminé, `tower` com recuo e antena piscante, `L`, `awning` toldos e varandas), 3 fileiras por distrito (a 3ª sem janelas: LOD), herói 35% maior e um **prédio-marco** (torre de 230–300) por distrito.
+- **Miolo**: praça com fonte de anéis concêntricos (mostarda/coral/teal), duas ruas cruzando até os 4 lados com faixas, 5 carros em vaivém com velocidades diferentes, 14 postes piscando fora de fase (no estágio 3 tremem), quarteirões de 6 prédios em cada canto com a paleta do distrito mais próximo, 4 parques de árvores com banco, roda-gigante do lado de Entretenimento. No declínio: carros desaceleram até parar, roda para, tudo dessatura e inclina, janelas acendem.
+- **Performance**: toda geometria estática opaca (blocos, telhados, árvores, faixas, aros das casas, props do miolo) vai para `InstancedMesh` com cor por instância, recalculado só nas trocas de estágio (`SI`). Na câmera de jogo: 60–190 draw calls e 20–34k triângulos; na vista geral: ~740 / 48k (momentânea). Tabuleiros Rápido/Médio usam menos props e sem janelas no miolo.
+
+## Áudio (v4.1) — 100% sintetizado
+`js/audio.js` gera tudo com Web Audio API (osciladores quadrado/triângulo/serra, ruído filtrado, envelopes), estilo chiptune. Nenhum arquivo de áudio.
+- **Autoplay**: o `AudioContext` só é criado/retomado no primeiro toque/clique em qualquer lugar; chamadas antes disso são ignoradas em silêncio (sem erro no console).
+- **Controles**: no HUD, 🎵 (música) e 🔊 (efeitos), independentes; a preferência fica em `localStorage` (`caos_audio_pref`) e vale entre partidas.
+- **Música**: sequenciador em loop (baixo, melodia, bumbo, chimbal), volume baixo, só durante a partida. Acompanha os 4 estágios de declínio do tabuleiro: maior/alegre a 112 BPM → tons menores, timbre de serra e 130 BPM no estágio 3.
+
+| efeito | quando toca |
+|---|---|
+| `click` | qualquer botão da interface (delegado) |
+| `dice` | evento `dado` (rolagem) |
+| `step` / `land` | cada casa andada / pouso na casa final |
+| `chaching` | `compra` de negócio |
+| `pay` | `taxa` (pagamento de visita) |
+| `karmaBom` / `karmaRuim` | evento `karma` |
+| `evento` / `eventoForte` | evento leve / forte |
+| `powerup` | `token_ganho` (Virada de Sorte) |
+| `whoosh` | `virada` (uso do token) |
+| `suspense` → `fanfare` / `gameover` | Última Cartada: carta girando → sucesso / falha |
+| `dundundun` | `heranca_falencia` (Falência Definitiva) |
+| `coins` | `passou_topo` (Início / dividendos) |
+| `finale` | fim de jogo (tela de ranking) |
 
 ## Estrutura
 ```

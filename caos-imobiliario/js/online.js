@@ -71,6 +71,7 @@ function wire(n) {
   });
   n.on('evt', (m) => { if (UI.online) { fila.push(m); processar(); } });
   n.on('ask', (m) => { if (UI.online) { fila.push(m); processar(); } });
+  n.on('saiu', (m) => { if (UI.online) { if (m.state) { UI.applyState(m.state); UI.renderPlayers(); } toast(`🚪 ${esc(m.nome)} saiu da partida — um bot assumiu o lugar.`, 'bad', 4000); } });
   n.on('aguardando', (m) => { if (UI.online && m.exceto !== UI.online.myId) toast(`⏳ ${esc(m.nome)} está decidindo…`, '', 1800); });
   n.on('aviso', (m) => { if (UI.online && m.exceto !== UI.online.myId) toast(esc(m.texto), 'sys', 3000); });
   n.on('reconnecting', (m) => badge(true, 'Conexão perdida — reconectando…'));
@@ -88,6 +89,12 @@ function renderLobby() {
   const n = lobby.jogadores.length; $('#btn-lobby-start').disabled = n < lobby.minJogadores; $('#btn-lobby-start').textContent = n < lobby.minJogadores ? `Começar (faltam ${lobby.minJogadores - n})` : `Começar partida (${n} jogadores)`;
   $('#btn-lobby-bot').disabled = n >= lobby.maxJogadores;
   $('#lobby-players').querySelectorAll('.kick').forEach((b) => (b.onclick = () => net.send({ t: 'remove_idx', idx: +b.dataset.idx })));
+}
+/* saída intencional durante a partida: avisa o servidor, limpa a sessão (sem reconexão) e volta ao início */
+function abandonarPartida() {
+  if (net) { net.send({ t: 'leave' }); net.close(); net = null; }
+  CaosNet.clearSession(); lobby = null; myToken = null; isHost = false;
+  setTimeout(() => location.reload(), 150);
 }
 function sairDaSala(avisar = true) {
   if (net && avisar) net.send({ t: 'leave' });
@@ -122,4 +129,5 @@ function init() {
   if (sess) { tab(true); $('#online-url').value = sess.url; conectar().then((n) => { n.session = { code: sess.code, token: sess.token }; n.send({ t: 'reconnect', code: sess.code, token: sess.token }); }).catch(() => CaosNet.clearSession()); }
 }
 document.addEventListener('DOMContentLoaded', init);
+window.CaosOnline = { abandonarPartida, sairDaSala };
 })();

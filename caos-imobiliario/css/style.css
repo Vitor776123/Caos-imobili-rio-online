@@ -385,3 +385,8 @@ small { font-weight: 500; }
 .lobby-row .kick { border: 0; background: transparent; color: var(--muted); font-size: 1.1rem; }
 .net-badge { position: fixed; top: 6px; left: 50%; transform: translateX(-50%); z-index: 70; background: var(--coral); color: #fff; border: 2.5px solid var(--ink); border-radius: 999px; padding: 4px 12px; font-weight: 600; font-size: .85rem; display: none; }
 .net-badge.show { display: block; }
+
+/* ---------- áudio ---------- */
+.icon-btn.off { opacity: .45; text-decoration: line-through; }
+.hud-right { gap: 5px; }
+@media (max-width: 420px) { .hud-right .icon-btn { width: 34px; height: 34px; font-size: .95rem; } }
