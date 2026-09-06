@@ -102,7 +102,7 @@ function signTex(txt, bg = '#FF6B57') {
 }
 
 /* ---------- props por distrito (low-poly) ---------- */
-function tree(parent, x, z, s = 1) { const gr = new T.Group(); SI.add(UNIT_CYL(), 0x8B5A2B, gr, LM(0, 13, 0, 2.5, 26, 2.5)); for (let i = 0; i < 4; i++) { const a = i * Math.PI / 2 + .4; SI.add(UNIT_CONE5(), 0x6CC04A, gr, LM(Math.cos(a) * 9, 26, Math.sin(a) * 9, 4, 18, 4, 0, Math.cos(a) * 1.1, -Math.sin(a) * 1.1)); } gr.position.set(x, 0, z); gr.scale.setScalar(s); parent.add(gr); return gr; }
+function tree(parent, x, z, s = 1) { const gr = new T.Group(); SI.add(UNIT_CYL(), 0x8B5A2B, gr, LM(0, 10, 0, 2.6, 20, 2.6)); const SPH = g('SphereGeometry', 1, 10, 8); SI.add(SPH, 0x6CC04A, gr, LM(0, 28, 0, 13, 12, 13)); SI.add(SPH, 0x7BD85A, gr, LM(6.5, 24, 3, 8.5, 8, 8.5)); SI.add(SPH, 0x7BD85A, gr, LM(-6.5, 24, -3.5, 8.5, 8, 8.5)); SI.add(SPH, 0x7BD85A, gr, LM(-2, 24, 7, 8, 7.5, 8)); gr.position.set(x, 0, z); gr.scale.setScalar(s); parent.add(gr); return gr; }
 function lamp(parent, x, z) { const gr = new T.Group(); mesh(g('CylinderGeometry', 1.2, 1.6, 34, 6), mc(0x4A4F55), 0, 17, 0, gr); gr.userData.bulb = mesh(g('SphereGeometry', 3.5, 8, 6), m(0xFFF4E0, { emissive: 0xFFD23F, ei: .8 }), 0, 36, 0, gr); gr.position.set(x, 0, z); parent.add(gr); return gr; }
 /* janelas de um bloco (frente e fundo), registradas para instanciamento */
 function windowsFor(gr, w, h, d, y0 = 0, cx = 0, cz = 0) {
