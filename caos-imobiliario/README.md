@@ -1,5 +1,15 @@
 # Caos Imobiliário (protótipo jogável)
 
+## 🆕 Mudanças de regras (v5 — feitas pelo Claude direto no código, todas testadas)
+- **Início:** 1 negócio por jogador (antes 2-3) + R$ 30.000 de reputação inicial (antes R$ 20.000).
+- **Karma redesenhado:** agora só **35% de chance** de acontecer algo além da taxa normal (antes era sempre). Quando acontece: **karma bom** = o visitante rouba de volta exatamente o valor da taxa do dono; **karma ruim** = o dono rouba o dobro do visitante (ele paga a taxa + o mesmo valor de novo). Testado estatisticamente: ~34% de disparo, ~50/50 entre bom e ruim.
+- **Última Cartada escalonada:** 1ª quebra = 40% de chance de voltar, 2ª = 30%, 3ª = 15%. Da 4ª em diante, sem chance nenhuma — eliminação direta.
+- **Multa por recusar prenda/efeito** (local e online): escalona 300 → 1.300 → 2.300 → 3.000 (trava no último valor a partir da 4ª recusa).
+- **Regra do 6 no dado:** tirou 6, joga de novo (encadeia se tirar 6 de novo).
+- **Virada de Sorte:** agora ganha 1 "tiro" a cada **2 taxas pagas** como visitante (não mais por karma ruim), sem limite de acúmulo — mas só pode **usar 1 por turno**. Também ganhou 20 efeitos diferentes (sorteados), no lugar dos 4 antigos.
+- **Karma Online:** no modo online não existe mais prenda física — em vez disso, sorteia 1 de 20 efeitos leves/médios/pesados no jogo (ex: andar menos casas, ficar sem comprar, perder negócio, etc.), com o mesmo sistema de reroll (2 por partida) e multa de recusa escalonada.
+- **Melhorar negócio:** ao cair no seu próprio negócio, pode pagar o custo de novo pra **dobrar a taxa** cobrada dos visitantes (nível sobe a cada melhoria).
+
 Jogo de tabuleiro digital, pass-and-play, 2–12 jogadores (pessoas e/ou bots). Roda 100% no navegador, sem servidor.
 
 ## Como rodar
