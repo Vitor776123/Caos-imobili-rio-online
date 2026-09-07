@@ -54,7 +54,19 @@ function decidir(pending, state, me, rng = Math.random) {
         default: return rng() < 0.6 ? 'sim' : 'nao';
       }
     }
+    case 'melhorar': {
+      if (!pending.podePagar) return 'nao';
+      const sobra = me.reputacao - pending.custo;
+      switch (P) {
+        case 'agressivo': return sobra >= 1000 ? 'sim' : 'nao';
+        case 'cauteloso': return sobra >= 8000 ? 'sim' : 'nao';
+        case 'oportunista': return pending.custo <= me.reputacao * 0.25 ? 'sim' : 'nao';
+        case 'vingativo': return sobra >= 4000 ? 'sim' : 'nao';
+        default: return rng() < 0.35 ? 'sim' : 'nao';
+      }
+    }
     case 'prenda': return 'cumprir';
+    case 'efeito_online': return 'aceitar';
     case 'decisao_grupo': return 'continuar';
   }
   return null;

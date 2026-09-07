@@ -135,7 +135,7 @@ class Room {
     if (this.fase !== 'lobby') throw new Error('Partida já iniciada.');
     if (this.members.length < CONFIG.minJogadores) throw new Error(`Precisa de pelo menos ${CONFIG.minJogadores} jogadores.`);
     if (!this.humans().length) throw new Error('Pelo menos uma pessoa precisa jogar.');
-    const setup = { modo: this.modo, jogadores: this.members.map((m) => ({ nome: m.nome, tipo: m.tipo, personagem: m.personagem, avatar: m.avatar, cor: m.cor, personalidade: m.personalidade })) };
+    const setup = { modo: this.modo, online: true, jogadores: this.members.map((m) => ({ nome: m.nome, tipo: m.tipo, personagem: m.personagem, avatar: m.avatar, cor: m.cor, personalidade: m.personalidade })) };
     this.engine = new GameEngine(this.io(), DATA);
     const S = this.engine.iniciar(setup);
     this.members.forEach((m, i) => { m.playerId = S.players[i].id; });

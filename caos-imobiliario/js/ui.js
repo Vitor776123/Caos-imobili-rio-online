@@ -237,7 +237,7 @@ const UI = {
       if (this.shownRep[p.id] !== target) { this.animateNumber($('.rep', chip), this.shownRep[p.id], target); this.shownRep[p.id] = target; chip.classList.remove('hit'); void chip.offsetWidth; chip.classList.add('hit'); }
       else $('.rep', chip).textContent = fmt(target);
       const bloq = (p.contaBloqueada || 0) + (p.bloqueioAtivo ? 1 : 0);
-      $('.meta', chip).innerHTML = p.eliminado ? '💀 eliminado' : `<span class="volta">${p.concluiu ? '🏁 concluiu' : `🔁 Volta ${p.voltas}/${this.S.rodadasTotais}`}</span> 🏪${p.negocios.length} 🍀${p.tokens}${p.tokensPendentes ? '+' + p.tokensPendentes : ''} 🎲${p.rerolls}${bloq > 0 ? `<span class="bloq">🔒 Conta bloqueada (${bloq})</span>` : ''}`;
+      $('.meta', chip).innerHTML = p.eliminado ? '💀 eliminado' : `<span class="volta">${p.concluiu ? '🏁 concluiu' : `🔁 Volta ${p.voltas}/${this.S.rodadasTotais}`}</span> 🏪${p.negocios.length} 🍀${p.tokens} 🎲${p.rerolls}${bloq > 0 ? `<span class="bloq">🔒 Conta bloqueada (${bloq})</span>` : ''}`;
       chip.classList.toggle('concluiu', !!p.concluiu);
     });
     // rola SÓ a faixa de cards (scrollIntoView rolava também o #screen-game e revelava o drawer fechado)
@@ -285,7 +285,9 @@ const UI = {
           case 'acao_turno': return ui.askAcao(p, pending);
           case 'bifurcacao': return ui.askBifurcacao(p, pending);
           case 'comprar': return ui.askComprar(p, pending);
+          case 'melhorar': return ui.askMelhorar(p, pending);
           case 'prenda': return ui.askPrenda(p, pending);
+          case 'efeito_online': return ui.askEfeitoOnline(p, pending);
         }
         return null;
       },
@@ -335,7 +337,11 @@ const UI = {
             if (evt.alvo.id !== p.id) ui.focusPlayer(p);
             return;
           }
-          case 'token_ganho': sfx('powerup'); ui.floatText(p, '🍀 +1', 'pos'); await ui.info(p, { kind: 'token', html: `<div class="b-head"><span class="e">🍀</span>Virada de Sorte!</div><p class="b-text">3 karmas ruins = 1 token. ${evt.retido ? 'Já tem 2 — esse fica retido.' : 'Use no início de um turno contra o líder.'}</p>`, max: 3200 }); return;
+          case 'token_ganho': sfx('powerup'); ui.floatText(p, '🍀 +1', 'pos'); await ui.info(p, { kind: 'token', html: `<div class="b-head"><span class="e">🍀</span>Virada de Sorte!</div><p class="b-text">A cada 2 taxas pagas, você ganha 1 tiro. Use no início de um turno contra o líder — só 1 por turno.</p>`, max: 3200 }); return;
+          case 'melhorou': sfx('cha_ching'); ui.floatText(p, '⬆️ melhorado!', 'pos'); toast(`⬆️ ${esc(p.nome)} melhorou ${evt.negocio.emoji} ${esc(evt.negocio.nome)} — taxa agora é ${fmt(evt.negocio.taxa)}!`, 'good', 2600); ui.renderPlayers(); return;
+          case 'joga_de_novo': toast(`🎲 ${esc(p.nome)} tirou 6 e joga de novo!`, 'sys', 1800); return;
+          case 'pulou_dado': toast(`⏭️ ${esc(p.nome)} perdeu a rolagem de dado dessa vez.`, 'bad', 2000); return;
+          case 'efeito_online': { const emoji = evt.bom ? '😇' : '😈'; toast(`${emoji} ${esc(evt.item.titulo)}: ${esc(evt.detalhe)}`, evt.bom ? 'bad' : 'bad', 2800); ui.renderPlayers(); return; }
           case 'prenda_cumprida': if (!ui.isHuman(p)) await ui.botSays(p, 'Cumpri a prenda. Ninguém viu, mas cumpri.'); else ui.floatText(p, '🎭', 'pos'); return;
           case 'prenda_recusada': ui.floatText(p, '-' + fmt(evt.valor), 'neg'); await sleep(T(400)); return;
           case 'virada': {
@@ -389,12 +395,29 @@ const UI = {
     const n = this.S.negocios[pending.negocioId];
     return this.bubble({ playerId: p.id, kind: 'taxa', html: this.negHead(n, `à venda · ${esc(n.categoria)} · ${n.tier}`) + `<p class="b-text">Taxa de visita ${fmt(n.taxa)}. Você tem ${fmt(p.reputacao)}.${pending.bloqueado ? ' 🔒 Sua conta está bloqueada — sem compras por enquanto.' : pending.podePagar ? '' : ' Não dá pra pagar.'}</p>`, buttons: [...(pending.bloqueado ? [] : [{ label: `Comprar ${fmt(n.custo)}`, value: 'sim', cls: 'primary', disabled: !pending.podePagar }]), { label: pending.bloqueado ? 'Seguir em frente' : 'Passar', value: 'nao', cls: 'ghost' }] });
   },
+  askMelhorar(p, pending) {
+    const n = this.S.negocios[pending.negocioId];
+    return this.bubble({ playerId: p.id, kind: 'taxa', html: this.negHead(n, `seu negócio · nível ${pending.nivel || 1}`) + `<p class="b-text">Hoje cobra ${fmt(pending.taxaAtual)} de taxa. Pagando ${fmt(pending.custo)} de novo, a taxa dobra pra <b>${fmt(pending.novaTaxa)}</b>! Você tem ${fmt(p.reputacao)}.${pending.podePagar ? '' : ' Não dá pra pagar.'}</p>`, buttons: [
+      { label: `Melhorar ${fmt(pending.custo)}`, value: 'sim', cls: 'primary', disabled: !pending.podePagar },
+      { label: 'Deixar como está', value: 'nao', cls: 'ghost' },
+    ] });
+  },
   askPrenda(p, pending) {
+    const CFG = CaosEngine.CONFIG.penalidadesRecusa; const valorRecusa = CFG[Math.min(p.recusasPrenda || 0, CFG.length - 1)];
     return this.bubble({ playerId: p.id, kind: 'prenda', html: `<div class="b-head"><span class="e">🎭</span>Prenda de ${esc(p.nome)}</div><div class="prenda-line"><small>${esc(pending.prenda.grupo)}</small>${esc(pending.prenda.texto)}</div>`, buttons: [
       { label: 'Cumpri ✔', value: 'cumprir', cls: 'teal' },
       { label: `🎲 Trocar (${pending.rerolls})`, value: 'reroll', cls: 'lilac', disabled: pending.rerolls <= 0 },
-      { label: `Recusar −${fmt(CaosEngine.CONFIG.penalidadeRecusarPrenda)}`, value: 'recusar', cls: 'coral' },
+      { label: `Recusar −${fmt(valorRecusa)}`, value: 'recusar', cls: 'coral' },
       { label: 'Não posso (saúde/alergia) — sortear outra', value: 'saude', cls: 'tiny' },
+    ] });
+  },
+  askEfeitoOnline(p, pending) {
+    const CFG = CaosEngine.CONFIG.penalidadesRecusa; const valorRecusa = CFG[Math.min(p.recusasPrenda || 0, CFG.length - 1)];
+    const emoji = pending.bom ? '😇' : '😈';
+    return this.bubble({ playerId: p.id, kind: 'prenda', html: `<div class="b-head"><span class="e">${emoji}</span>${pending.item.titulo}</div><div class="prenda-line"><small>efeito ${pending.bom ? 'de karma bom' : 'de karma ruim'}</small>${esc(pending.item.titulo)}, sorteado no lugar da prenda física.</div>`, buttons: [
+      { label: 'Aceitar ✔', value: 'aceitar', cls: 'teal' },
+      { label: `🎲 Trocar (${pending.rerolls})`, value: 'reroll', cls: 'lilac', disabled: pending.rerolls <= 0 },
+      { label: `Recusar −${fmt(valorRecusa)}`, value: 'recusar', cls: 'coral' },
     ] });
   },
   askDecisaoGrupo(pending) {
