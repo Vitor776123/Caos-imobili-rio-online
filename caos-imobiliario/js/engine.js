@@ -37,7 +37,48 @@ const CONFIG = {
   minJogadores: 2, maxJogadores: 12,
 };
 
-/* ---------- listas de efeitos (Virada de Sorte + Karma Online) ---------- */
+/* Descrição em linguagem simples do que cada efeito faz, pra mostrar ANTES de aplicar
+   (sempre do ponto de vista de quem está vendo a tela — "você" = quem sofre o efeito). */
+function descreverEfeito(item) {
+  switch (item.tipo) {
+    case 'perde_fixo': return `Você perde ${util.fmt(item.valor)}.`;
+    case 'perde_percent': return `Você perde ${item.valor}% da sua reputação.`;
+    case 'transfere_fixo': return `Você perde ${util.fmt(item.valor)} — vai pra quem causou isso.`;
+    case 'transfere_percent': return `Você perde ${item.valor}% da sua reputação — vai pra quem causou isso.`;
+    case 'perde_negocio': return 'Você perde um negócio aleatório seu (ele volta pro mercado).';
+    case 'rouba_negocio': return 'Um negócio aleatório seu passa a ser de quem causou isso.';
+    case 'rouba_negocio_especifico': return 'O negócio que acabou de ser visitado muda de dono.';
+    case 'fecha_negocio': case 'fecha_negocio_proprio': return 'Um negócio aleatório seu fecha até sua próxima jogada.';
+    case 'fecha_negocio_com_taxa': return 'Esse negócio fecha, e mesmo assim alguém recebe a taxa dele.';
+    case 'bloqueia_dividendo': return 'Você não recebe o dividendo de portfólio na próxima volta pelo Início.';
+    case 'reduz_dividendo': return `Seu próximo dividendo de portfólio fica ${item.percent}% menor.`;
+    case 'transfere_dividendo_negocio': return `Você perde parte do valor desse negócio (${item.percent}% de um dividendo) pra quem causou isso.`;
+    case 'forcar_karma_ruim': return `Você sofre karma ruim garantido na(s) próxima(s) ${item.vezes} visita(s) que fizer.`;
+    case 'teleporte_casa_livre': case 'teleporte_prioridade': return 'Você teleporta pra perto de um negócio livre no tabuleiro.';
+    case 'teleporte_relativo': return `Você é movido ${Math.abs(item.casas)} casa(s) ${item.casas < 0 ? 'pra trás' : 'pra frente'} agora mesmo.`;
+    case 'troca_posicao': return 'Você troca de posição no tabuleiro com quem causou isso.';
+    case 'troca_reputacao': return 'Você troca TODA a sua reputação com quem causou isso!';
+    case 'volta_dado': return 'Você rola o dado e anda esse número de casas pra trás.';
+    case 'compra_taxada': return `Sua próxima compra de negócio custa ${item.percent}% a mais.`;
+    case 'taxa_dobrada_negocio': return 'Um negócio aleatório seu vai cobrar taxa em dobro na próxima visita.';
+    case 'bloqueio_compra': case 'bloqueio_compra_outro': return `Você fica sem poder comprar negócios pelas próximas ${item.turnos} jogada(s).`;
+    case 'restringe_dado': case 'restringe_dado_proprio': return `Seu próximo dado fica limitado entre ${item.min} e ${item.max}.`;
+    case 'anda_menos': return `Você anda ${item.valor} casa(s) a menos na próxima rolagem de dado.`;
+    case 'pula_dado': return 'Você perde a próxima rolagem de dado (fica parado esse turno).';
+    case 'sem_reroll_token': case 'sem_reroll_token_outro': return `Você fica sem usar reroll nem token por ${item.turnos} jogada(s).`;
+    case 'perde_reroll': return `Você perde ${item.valor} troca de prenda (reroll).`;
+    case 'perde_token': return `Você perde ${item.valor} token de Virada de Sorte.`;
+    case 'troca_reroll_token': return 'Você perde 1 reroll — quem causou isso ganha.';
+    case 'transfere_token': return 'Você perde 1 token de Virada de Sorte pra quem causou isso (ou paga R$ 200 se não tiver nenhum).';
+    case 'revela_reputacao': return 'Sua reputação total é revelada pra quem causou isso.';
+    case 'desvaloriza_negocio': case 'desvaloriza_negocio_transfere': return `Um negócio seu perde ${item.percent}% de valor pra sempre.`;
+    case 'fiscalizacao': return 'Um dos seus negócios sofre um karma ruim imediato.';
+    case 'roubada': return 'Quem causou isso rouba parte da diferença de reputação entre vocês.';
+  }
+  return 'Efeito misterioso — só descobrindo na prática.';
+}
+
+
 // tipos genéricos usados pelos 3 catálogos abaixo — ver aplicarEfeitoGenerico()
 const VIRADA_EFEITOS = [
   { titulo: 'Fiscalização Federal', tipo: 'fiscalizacao' },
@@ -405,7 +446,8 @@ class GameEngine {
     let texto;
     if (bom) { texto = this.texto(n.karmaBom, n); dono.reputacao -= valor; visitante.reputacao += valor; this.rancor(dono, visitante); }
     else { texto = this.texto(n.karmaRuim, n); visitante.reputacao -= valor; dono.reputacao += valor; this.rancor(visitante, dono); }
-    this.log(`${bom ? '🍀 Karma bom' : '💀 Karma ruim'} em ${n.emoji} ${n.nome}: ${alvo.nome} perdeu ${util.fmt(valor)}.`, bom ? 'karma_bom' : 'karma_ruim');
+    const quemGanha = bom ? visitante : dono, quemPerde = bom ? dono : visitante;
+    this.log(`${bom ? '🍀 Karma bom' : '💀 Karma ruim'} em ${n.emoji} ${n.nome}: ${quemPerde.nome} perdeu ${util.fmt(valor)} para ${quemGanha.nome}.`, bom ? 'karma_bom' : 'karma_ruim');
     await this.anim({ type: 'karma', bom, visitante, dono, negocio: n, valor, texto, alvo });
     if (!bom) await this.contarKarmaRuim(alvo);
     if (this.S.online) await this.aplicarEfeitoOnlineKarma(bom, visitante, dono, n);
@@ -633,5 +675,5 @@ class GameEngine {
   }
 }
 
-global.CaosEngine = { GameEngine, CONFIG, util, buildBoard, CATEGORIAS, VIRADA_EFEITOS, KARMA_RUIM_ONLINE, KARMA_BOM_ONLINE };
+global.CaosEngine = { GameEngine, CONFIG, util, buildBoard, CATEGORIAS, VIRADA_EFEITOS, KARMA_RUIM_ONLINE, KARMA_BOM_ONLINE, descreverEfeito };
 })(typeof window !== 'undefined' ? window : globalThis);

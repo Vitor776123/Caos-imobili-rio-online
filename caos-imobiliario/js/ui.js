@@ -229,9 +229,9 @@ const UI = {
       if (!chip) {
         chip = document.createElement('div'); chip.className = 'chip'; chip.dataset.id = p.id;
         chip.innerHTML = `<div class="av" style="background:${p.cor}">${this.av(p)}</div><div><div class="nm">${esc(p.nome)}</div><div class="rep"></div><div class="meta"></div></div>`;
-        chip.onclick = () => this.playerInfo(p);
         strip.appendChild(chip);
       }
+      chip.onclick = () => this.playerInfo(p); // sempre religa: no online o objeto `p` é trocado a cada snapshot
       chip.classList.toggle('cur', cur && cur.id === p.id); chip.classList.toggle('dead', p.eliminado); chip.classList.toggle('lider', !!lider && lider.id === p.id);
       const target = p.eliminado ? p.repFinal : p.reputacao;
       if (this.shownRep[p.id] !== target) { this.animateNumber($('.rep', chip), this.shownRep[p.id], target); this.shownRep[p.id] = target; chip.classList.remove('hit'); void chip.offsetWidth; chip.classList.add('hit'); }
@@ -346,9 +346,8 @@ const UI = {
           case 'prenda_recusada': ui.floatText(p, '-' + fmt(evt.valor), 'neg'); await sleep(T(400)); return;
           case 'virada': {
             sfx('whoosh');
-            const v = VIRADAS[evt.efeito]; ui.updateCells(); ui.focusPlayer(evt.alvo);
-            if (evt.valor) { ui.floatText(evt.alvo, '-' + fmt(evt.valor), 'neg'); if (evt.efeito !== 'fofoca') ui.floatText(p, '+' + fmt(evt.valor), 'pos'); }
-            await ui.info(p, { playerId: evt.alvo.id, kind: 'token', html: `<div class="b-head"><span class="e">${v.emoji}</span>${v.nome}</div><div class="b-eyebrow">🍀 Virada de ${esc(p.nome)} contra ${evt.alvo.avatar} ${esc(evt.alvo.nome)}</div><p class="b-text">${esc(evt.detalhe)}</p>` });
+            ui.updateCells(); ui.focusPlayer(evt.alvo);
+            await ui.info(p, { playerId: evt.alvo.id, kind: 'token', html: `<div class="b-head"><span class="e">🍀</span>${esc(evt.item.titulo)}</div><div class="b-eyebrow">🍀 Virada de ${esc(p.nome)} contra ${evt.alvo.avatar} ${esc(evt.alvo.nome)}</div><p class="b-text">${esc(evt.detalhe)}</p>` });
             ui.focusPlayer(p); return;
           }
           case 'ultima_cartada': {
@@ -384,7 +383,7 @@ const UI = {
         ...(pending.podeToken ? [{ label: `🍀 Virada de Sorte (${p.tokens})`, value: 'token', cls: 'teal' }] : []),
       ] });
       if (r !== 'token') return r;
-      const c = await this.bubble({ playerId: p.id, kind: 'token', html: `<div class="b-head"><span class="e">🍀</span>Usar Virada?</div><p class="b-text">Efeito sorteado entre 4, contra o líder: <b>${L ? L.avatar + ' ' + esc(L.nome) : '—'}</b> (${L ? fmt(L.reputacao) : ''}).</p>`, buttons: [{ label: 'Usar agora', value: 'sim', cls: 'primary' }, { label: 'Guardar', value: 'nao', cls: 'ghost', }] });
+      const c = await this.bubble({ playerId: p.id, kind: 'token', html: `<div class="b-head"><span class="e">🍀</span>Usar Virada?</div><p class="b-text">Efeito sorteado entre 20, contra o líder: <b>${L ? L.avatar + ' ' + esc(L.nome) : '—'}</b> (${L ? fmt(L.reputacao) : ''}).</p>`, buttons: [{ label: 'Usar agora', value: 'sim', cls: 'primary' }, { label: 'Guardar', value: 'nao', cls: 'ghost', }] });
       if (c === 'sim') return 'token';
     }
   },
@@ -414,7 +413,8 @@ const UI = {
   askEfeitoOnline(p, pending) {
     const CFG = CaosEngine.CONFIG.penalidadesRecusa; const valorRecusa = CFG[Math.min(p.recusasPrenda || 0, CFG.length - 1)];
     const emoji = pending.bom ? '😇' : '😈';
-    return this.bubble({ playerId: p.id, kind: 'prenda', html: `<div class="b-head"><span class="e">${emoji}</span>${pending.item.titulo}</div><div class="prenda-line"><small>efeito ${pending.bom ? 'de karma bom' : 'de karma ruim'}</small>${esc(pending.item.titulo)}, sorteado no lugar da prenda física.</div>`, buttons: [
+    const desc = CaosEngine.descreverEfeito(pending.item);
+    return this.bubble({ playerId: p.id, kind: 'prenda', html: `<div class="b-head"><span class="e">${emoji}</span>${esc(pending.item.titulo)}</div><div class="prenda-line"><small>${pending.bom ? 'efeito de karma bom' : 'efeito de karma ruim'} · sorteado no lugar da prenda física</small>${esc(desc)}</div>`, buttons: [
       { label: 'Aceitar ✔', value: 'aceitar', cls: 'teal' },
       { label: `🎲 Trocar (${pending.rerolls})`, value: 'reroll', cls: 'lilac', disabled: pending.rerolls <= 0 },
       { label: `Recusar −${fmt(valorRecusa)}`, value: 'recusar', cls: 'coral' },
